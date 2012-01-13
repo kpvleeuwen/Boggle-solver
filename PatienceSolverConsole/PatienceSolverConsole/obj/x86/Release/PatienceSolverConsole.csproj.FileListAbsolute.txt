@@ -1,0 +1,6 @@
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\bin\Release\PatienceSolverConsole.exe
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\bin\Release\PatienceSolverConsole.pdb
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\obj\x86\Release\PatienceSolverConsole.exe
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\obj\x86\Release\PatienceSolverConsole.pdb
+C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\PatienceSolverConsole\PatienceSolverConsole\bin\Release\PatienceSolverConsole.exe.config
