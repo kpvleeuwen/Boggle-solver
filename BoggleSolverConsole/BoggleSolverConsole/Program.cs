@@ -26,14 +26,35 @@ namespace BoggleSolverConsole
             Console.WriteLine("Press enter to show words");
             Console.ReadLine();
             time = Stopwatch.StartNew();
-            foreach (var word in
-                    BoggleUtilities.FindWords(field, dictionary))
-            {
-                Console.WriteLine(word);
-            }
-
+            var wordsInField = BoggleUtilities.FindWords(field, dictionary).ToArray();
             Console.WriteLine("Word finding took {0} ms", time.ElapsedMilliseconds);
+            Console.WriteLine("Found {0} words", wordsInField.Length);
+
+            foreach (var word in wordsInField.Select(w => w.Word))
+                Console.WriteLine(word);
+
+            var longestWord = wordsInField.OrderBy(w => w.Word.Length).LastOrDefault();
+            if (longestWord != null)
+            {
+                DisplayWord(longestWord, field);
+            }
             Console.ReadLine();
+        }
+
+        private static void DisplayWord(BoggleSolution word, char[,] field)
+        {
+            for (int y = 0; y < field.GetLength(1); y++)
+            {
+                for (int x = 0; x < field.GetLength(0); x++)
+                {
+                    if (word.Path.Contains(new Point { X = x, Y = y }))
+                        Console.BackgroundColor = ConsoleColor.DarkGreen;
+                    Console.Write(field[x, y]);
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.Write(' ');
+                }
+                Console.WriteLine();
+            }
         }
 
         private static HashSet<char> UniqueCharsIn(char[,] chars)
@@ -82,9 +103,9 @@ namespace BoggleSolverConsole
 
         static void DumpField(char[,] chars)
         {
-            for (int x = 0; x < chars.GetLength(0); x++)
+            for (int y = 0; y < chars.GetLength(1); y++)
             {
-                for (int y = 0; y < chars.GetLength(1); y++)
+                for (int x = 0; x < chars.GetLength(0); x++)
                 {
                     Console.Write(chars[x, y]);
                     Console.Write(' ');
