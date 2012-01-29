@@ -12,7 +12,7 @@ namespace BoggleSolverConsole
         static void Main(string[] args)
         {
 
-            var field = GenerateField(5, 5);
+            var field = GenerateField(8, 8);
             DumpField(field);
 
             var filename = "woorden.txt";
@@ -30,15 +30,24 @@ namespace BoggleSolverConsole
             Console.WriteLine("Word finding took {0} ms", time.ElapsedMilliseconds);
             Console.WriteLine("Found {0} words", wordsInField.Length);
 
-            foreach (var word in wordsInField.Select(w => w.Word))
-                Console.WriteLine(word);
+            foreach (var foundword in wordsInField.Select(w => w.Word).OrderBy(w=>w))
+                Console.WriteLine(foundword);
 
-            var longestWord = wordsInField.OrderBy(w => w.Word.Length).LastOrDefault();
-            if (longestWord != null)
+            string word;
+            do
             {
-                DisplayWord(longestWord, field);
-            }
-            Console.ReadLine();
+                word = Console.ReadLine();
+                var wordToDisplay = wordsInField.FirstOrDefault(w => w.Word == word);
+                if (wordToDisplay == null) // word is not in field
+                {
+                    // either its not a word or its not in field.
+                    Console.WriteLine("Sorry, '{0}' is not a word in the field.", word);
+                }
+                else
+                {
+                    DisplayWord(wordToDisplay, field);
+                }
+            } while (!String.IsNullOrEmpty(word));
         }
 
         private static void DisplayWord(BoggleSolution word, char[,] field)
@@ -47,15 +56,35 @@ namespace BoggleSolverConsole
             {
                 for (int x = 0; x < field.GetLength(0); x++)
                 {
-                    if (word.Path.Contains(new Point { X = x, Y = y }))
+                    var thispoint = new Point { X = x, Y = y };
+                    // Mark the letter in the word
+                    if (word.Path.Contains(thispoint))
                         Console.BackgroundColor = ConsoleColor.DarkGreen;
-                    Console.Write(field[x, y]);
+                    Console.Write(field[x, y].ToString().ToUpper());
                     Console.BackgroundColor = ConsoleColor.Black;
-                    Console.Write(' ');
+                    // mark the whitespace between letters
+                    if (word.PathContains(thispoint, new Point { X = x + 1, Y = y }))
+                        Console.BackgroundColor = ConsoleColor.DarkGreen;
+                    Console.Write("  ");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                }
+                Console.WriteLine();
+                for (int x = 0; x < field.GetLength(0); x++)
+                {
+                    var thispoint = new Point { X = x, Y = y };
+                    // mark the whitespace between lines
+                    if (word.PathContains(thispoint, new Point { X = x, Y = y + 1 }))
+                        Console.BackgroundColor = ConsoleColor.DarkGreen;
+                    Console.Write(" ");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    // whitespace for pretty-printing
+                    Console.Write("  ");
                 }
                 Console.WriteLine();
             }
         }
+
+
 
         private static HashSet<char> UniqueCharsIn(char[,] chars)
         {
@@ -113,8 +142,6 @@ namespace BoggleSolverConsole
                 Console.WriteLine();
             }
         }
-
-
 
         void Test()
         {

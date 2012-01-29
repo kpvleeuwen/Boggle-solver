@@ -47,7 +47,7 @@ namespace BoggleSolverConsole
         /// <param name="chars"></param>
         /// <param name="dictionary"></param>
         /// <returns></returns>
-        public static IEnumerable<string> FindWords(char[,] chars, CharDictionaryEntry dictionary)
+        public static IEnumerable<BoggleSolution> FindWords(char[,] chars, CharDictionaryEntry dictionary)
         {
             for (int x = 0; x < chars.GetLength(0); x++)
                 for (int y = 0; y < chars.GetLength(1); y++)
@@ -56,6 +56,7 @@ namespace BoggleSolverConsole
                             chars,
                             new bool[chars.GetLength(0), chars.GetLength(1)],
                             dictionary,
+                            new Stack<Point>(),
                             x,
                             y
                             ))
@@ -63,25 +64,27 @@ namespace BoggleSolverConsole
                 }
         }
 
-        private static IEnumerable<string> FindWords(char[,] chars, bool[,] visited, CharDictionaryEntry lastStep, int x, int y)
+        private static IEnumerable<BoggleSolution> FindWords(char[,] chars, bool[,] visited, CharDictionaryEntry lastStep, Stack<Point> path, int x, int y)
         {
             if (x < 0 || y < 0 || x >= chars.GetLength(0) || y >= chars.GetLength(0) || visited[x, y])
                 yield break;
             var nextstep = lastStep[chars[x, y]];
             if (nextstep == null) // no word in this direction
                 yield break;
+            path.Push(new Point { X = x, Y = y });
             if (nextstep.IsWord)  // Victory! Found a word, return it... 
-                yield return nextstep.Word;
+                yield return new BoggleSolution(nextstep.Word, path);
             // Return possible longer words.
             var newVisited = new bool[chars.GetLength(0), chars.GetLength(1)];
             Array.Copy(visited, newVisited, visited.Length);
             newVisited[x, y] = true;
             foreach (var word in
-                FindWords(chars, newVisited, nextstep, x + 1, y).Concat(
-                FindWords(chars, newVisited, nextstep, x, y + 1).Concat(
-                FindWords(chars, newVisited, nextstep, x - 1, y).Concat(
-                FindWords(chars, newVisited, nextstep, x, y - 1)))))
+                FindWords(chars, newVisited, nextstep, path, x + 1, y).Concat(
+                FindWords(chars, newVisited, nextstep, path, x, y + 1)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x - 1, y)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x, y - 1)))
                 yield return word;
+            path.Pop();
         }
     }
 }
