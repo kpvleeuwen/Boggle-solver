@@ -5,3 +5,6 @@ C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\P
 C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\obj\x86\Debug\BoggleSolverConsole.exe
 C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\obj\x86\Debug\BoggleSolverConsole.pdb
 C:\Documents and Settings\K. P. van Leeuwen\mijn documenten\visual studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\bin\Debug\woorden.txt
+C:\Users\Koen\Documents\Visual Studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\bin\Debug\BoggleSolverConsole.exe.config
+C:\Users\Koen\Documents\Visual Studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\obj\x86\Debug\BoggleSolverConsole.exe
+C:\Users\Koen\Documents\Visual Studio 2010\Projects\BoggleSolverConsole\BoggleSolverConsole\obj\x86\Debug\BoggleSolverConsole.pdb
