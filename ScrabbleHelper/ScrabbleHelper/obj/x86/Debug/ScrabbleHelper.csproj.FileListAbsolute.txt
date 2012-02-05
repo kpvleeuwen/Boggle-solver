@@ -1,0 +1,6 @@
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\bin\Debug\woorden.txt
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\bin\Debug\ScrabbleHelper.exe
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\bin\Debug\ScrabbleHelper.pdb
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\obj\x86\Debug\ScrabbleHelper.exe
+C:\Users\Koen\documents\visual studio 2010\Projects\ScrabbleHelper\ScrabbleHelper\obj\x86\Debug\ScrabbleHelper.pdb
