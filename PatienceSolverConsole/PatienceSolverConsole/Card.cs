@@ -18,7 +18,7 @@ namespace PatienceSolverConsole
 
     public enum Value
     {
-        Ace,
+        Ace = 1,
         _2,
         _3,
         _4,
@@ -79,7 +79,7 @@ namespace PatienceSolverConsole
                 switch (line)
                 {
                     case 0:
-                        Console.Write(".----."); 
+                        Console.Write(".----.");
                         return true;
                     case 1:
                         if (Visible)
@@ -121,10 +121,14 @@ namespace PatienceSolverConsole
         {
             using (new BlockConsoleColor(Color.ToConsoleColor()))
             {
-                Console.Write(Suit.ToSuitChar());
-                Console.Write(Value.ToValueString());
+                Console.Write(ToString());
                 Console.Write(" ");
             }
+        }
+
+        public override string ToString()
+        {
+            return "" + Suit.ToSuitChar() + Value.ToValueString();
         }
 
         public override bool Equals(object obj)
@@ -142,6 +146,27 @@ namespace PatienceSolverConsole
         public void Move(CardStack dest)
         {
             Stack.Move(this, dest);
+        }
+
+        public static IEnumerable<Card> Random(int max)
+        {
+            var random = new Random();
+            var visible = false;
+            for (int i = 0; i < max; i++)
+            {
+                var suit = GetEnumValue<Suit>(random);
+                var value = GetEnumValue<Value>(random);
+                yield return new Card(suit, value) { Visible = visible };
+                var sw = random.NextDouble();
+                if (sw < 0.2) yield break;
+                visible |= sw < 0.4;
+            }
+        }
+
+        public static T GetEnumValue<T>(Random rnd)
+        {
+            var values = Enum.GetValues(typeof(T));
+            return (T)values.GetValue(rnd.Next(values.Length));
         }
     }
 

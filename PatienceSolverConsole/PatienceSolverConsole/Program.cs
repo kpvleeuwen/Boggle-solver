@@ -3,44 +3,75 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.IO;
+using System.Threading;
 
 namespace PatienceSolverConsole
 {
-    class Program
+    static class Program
     {
-        private static PatienceField field;
+
+        private static string solvableFieldsFile = "solvable.txt";
+
         static void Main(string[] args)
         {
-
-            field = new PatienceField();
-            field.FillWithRandomCards(new Random(4));
-
-            field.DumpToConsole();
-            //1,2,3,4,5,6,7,8,10,11, 13,16,17,19 is doable
-
-            //PlayGame();
-
-            var solver = new Solver(field);
-            var solution = solver.Solve();
-            if (solution == null)
+            int currentFieldNumber = GetLastField();
+            while (true)
             {
-                Console.WriteLine("No solution :(");
-                Console.ReadKey(true);
-            }
-            else
-            {
-                var sequence = solution.GetSequence().Reverse().ToList();
-                foreach (var solutionfield in sequence)
+                currentFieldNumber++;
+
+                var field = new PatienceField();
+                field.FillWithRandomCards(new Random(currentFieldNumber));
+                field.DumpToConsole();
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                var stopwatch = Stopwatch.StartNew();
+                var solution = TrySolve(field, timeout);
+                stopwatch.Stop();
+                if (solution == null)
                 {
-                    solutionfield.DumpToConsole();
-                    Console.ReadKey(true);
+                    Console.WriteLine("No solution found for field {0} in {1} seconds :(", currentFieldNumber, stopwatch.Elapsed.TotalSeconds);
+                }
+                else
+                {
+                    Console.WriteLine("Solution found for field {0} in {1} seconds :)({2} steps) ",
+                        currentFieldNumber, stopwatch.Elapsed.TotalSeconds, solution.GetSequence().Count());
+                    File.AppendAllText(solvableFieldsFile, String.Format("{0}\r\n", currentFieldNumber));
                 }
             }
         }
 
+        private static int GetLastField()
+        {
+
+            int currentFieldNumber = 0;
+            try
+            {
+                Int32.TryParse(File.ReadAllLines(solvableFieldsFile).Last(), out currentFieldNumber);
+            }
+            catch (Exception) { }
+            Console.WriteLine("Last known solvable: {0}", currentFieldNumber);
+
+            return currentFieldNumber;
+        }
+
+        private static SolverEntry TrySolve(PatienceField field, TimeSpan timeout)
+        {
+            Console.WriteLine(timeout);
+            var solver = new Solver(field, silent:true);
+            SolverEntry result = null;
+            var solverThread = new Thread(() => result = solver.Solve());
+            solverThread.Start();
+            if (!solverThread.Join(timeout))
+            {
+                solverThread.Abort();
+                return null;
+            }
+            return result;
+        }
 
 
-        private static void PlayGame()
+
+        private static void PlayGame(PatienceField field)
         {
             string input;
             do
@@ -51,8 +82,8 @@ namespace PatienceSolverConsole
                     field.Stock.NextCard();
                 else if (input.Length == 2)
                 {
-                    var from = GetStack(input[0]);
-                    var to = GetStack(input[1]);
+                    var from = field.GetStack(input[0]);
+                    var to = field.GetStack(input[1]);
                     Move(from, to);
                     if (field.IsDone())
                         break;
@@ -78,7 +109,7 @@ namespace PatienceSolverConsole
             return;
         }
 
-        private static CardStack GetStack(char p)
+        private static CardStack GetStack(this PatienceField field, char p)
         {
             switch (p)
             {

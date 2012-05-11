@@ -150,6 +150,37 @@ namespace PatienceSolverConsole
                 .All(card => card.Visible);
         }
 
+        private int GetValue(Card c)
+        {
+            if (c == null) return 0;
+            return (int)c.Value;
+        }
+
+        public void DoTrivialMoves()
+        {
+            var stacks = GetOriginStacks().ToList();
+            bool changed;
+            do
+            {
+                changed = false;
+                foreach (var card in stacks.SelectMany(s => s.GetMovableCards()))
+                    foreach (var dest in FinishStacks.Where(s => s.CanAccept(card)))
+                    {
+                        if (FinishStacks.Select(f => GetValue(f.Top)).All(
+                            value => value >= GetValue(card) - 2))
+                        {
+                            // this move is always valid since it 
+                            // cannot block another card: 
+                            // all cards that can go on top of this card, 
+                            // can also enter their finish stack.
+                            card.Move(dest);
+                            changed = true;
+                        }
+                    }
+            } while (changed);
+        }
+
+
     }
 
     static class Util

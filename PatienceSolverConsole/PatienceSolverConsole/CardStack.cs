@@ -21,7 +21,7 @@ namespace PatienceSolverConsole
             _hashDirty = true;
         }
 
-        protected IList<Card> Cards { get; private set; }
+        protected virtual IList<Card> Cards { get; private set; }
         public Card Top { get { return Cards.LastOrDefault(); } }
         public int Count { get { return Cards.Count; } }
 
@@ -43,6 +43,15 @@ namespace PatienceSolverConsole
             return Cards.Reverse().TakeWhile(c => c.Visible);
         }
 
+
+        public event EventHandler<EventArgs> StackChanged;
+
+        protected void OnStackChanged()
+        {
+            if (StackChanged != null)
+                StackChanged(this, new EventArgs());
+        }
+
         public abstract bool CanAccept(Card c);
 
         protected abstract void DoAccept(Card c);
@@ -55,6 +64,7 @@ namespace PatienceSolverConsole
             c.Stack = this;
             _hashDirty = true;
             Debug.Assert(Top.Visible, "invisible top");
+            OnStackChanged();
         }
 
         public abstract void Move(Card c, CardStack s);
@@ -129,6 +139,13 @@ namespace PatienceSolverConsole
             throw new InvalidOperationException();
         }
 
+        public override IEnumerable<Card> GetMovableCards()
+        {
+            if (JustMoveTop)
+                return base.GetMovableCards().Take(1);
+            return base.GetMovableCards();
+        }
+
         public override bool CanAccept(Card c)
         {
             return false;
@@ -145,9 +162,11 @@ namespace PatienceSolverConsole
             s.Accept(c);
             Cards.Remove(c);
             _hashDirty = true;
+
+            OnStackChanged();
             // New top is visible
-            // if (Top != null)
-            //     Top.Visible = true;
+            if (Top != null)
+                Top.Visible = true;
         }
 
         public void NextCard()
@@ -160,6 +179,7 @@ namespace PatienceSolverConsole
             Cards.RemoveAt(0);
             _hashDirty = true;
             Top.Visible = true;
+            OnStackChanged();
         }
 
         /// <summary>
@@ -191,6 +211,8 @@ namespace PatienceSolverConsole
                 return morelines;
             }
         }
+
+        public bool JustMoveTop { get; set; }
     }
 
     [Serializable]
@@ -230,6 +252,8 @@ namespace PatienceSolverConsole
             // New top is visible
             if (Top != null)
                 Top.Visible = true;
+
+            OnStackChanged();
         }
 
         /// <summary>
@@ -304,6 +328,7 @@ namespace PatienceSolverConsole
             // New top is visible
             if (Top != null)
                 Top.Visible = true;
+            OnStackChanged();
         }
 
         /// <summary>
