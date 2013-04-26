@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Coordinate.cs" />
+    <Compile Include="J2000Extensions.cs" />
     <Compile Include="PhysicalQuantities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -13,6 +13,7 @@ namespace ProtonAstroLib.Tests
             TestAngle();
             TestCoordinateNorthPole1();
             TestCoordinateNorthPole2();
+            TestEquationOfTime();
             TestHourangle();
             TestCoordinateVegaOnEpoch();
             TestCoordinateVega();
@@ -20,11 +21,26 @@ namespace ProtonAstroLib.Tests
             Console.ReadLine();
         }
 
+        private static void TestEquationOfTime()
+        {
+            var undertest = Constants.J2000Epoch;
+            var sum = 0.0;
+            for (int i = 0; i < 365; i++)
+            {
+                var eot = undertest.EquationOfTime().TotalMinutes;
+                // We know that the two effects that cause the irreguarities can never add up to more than 20 minutes
+                Debug.Assert(Math.Abs(eot) < 20, "Equation of time greater than 20min");
+                sum += eot;
+                undertest = undertest.AddDays(1);
+            }
+            // We know that over a year, all effects should cancel out
+            Debug.Assert(Math.Abs(sum) < 1, "Equation of time ");
+        }
+
         private static void TestHourangle()
         {
-            Console.WriteLine(EquatorialCoordinate.GreenwichSiderialTime(Constants.J2000Epoch).Normalized.Time);
-            Console.WriteLine(EquatorialCoordinate.GreenwichSiderialTime(DateTimeOffset.Now).Normalized.Time);
-            Console.WriteLine(EquatorialCoordinate.GreenwichSiderialTime(DateTimeOffset.UtcNow).Normalized.Time);
+            Console.WriteLine(J2000Extensions.GreenwichMeanSiderialTime(DateTimeOffset.Now).Normalized.Time);
+            Console.WriteLine(J2000Extensions.GreenwichSiderialTime(DateTimeOffset.Now).Normalized.Time);
         }
 
         private static void TestCoordinateVegaOnEpoch()
@@ -33,20 +49,14 @@ namespace ProtonAstroLib.Tests
             var moment = Constants.J2000Epoch;
             // 17:05:30
             HorizontalCoordinate result;
-            do
-            {
-                 result = vega.GetHorizontalCoordinate(moment, maassluisLon, maassluisLat);
-                Console.WriteLine(EquatorialCoordinate.GreenwichSiderialTime(moment).Time);
-                 Console.WriteLine("" + result.Azimuth + "/" + result.Altitude);
-                 moment = DateTimeOffset.Now;
-            } while (Console.ReadLine() == "");
+            result = vega.GetHorizontalCoordinate(moment, maassluisLon, maassluisLat);
             // expected values from Stellarium
             AssertEqual(result.Azimuth, Angle.FromDegrees(197, 29, 13));
             AssertEqual(result.Altitude, Angle.FromDegrees(76, 22, 16));
         }
 
         static readonly Angle maassluisLat = Angle.FromDegrees(51, 55, 11.99);
-        static readonly Angle maassluisLon = Angle.FromDegrees(4, 15, 36.00);
+        static readonly Angle maassluisLon = -Angle.FromDegrees(4, 15, 36.00);
 
         private static void TestCoordinateVega()
         {
@@ -103,24 +113,19 @@ namespace ProtonAstroLib.Tests
         [DebuggerNonUserCode]
         public static void AssertEqual(double actual, double expected)
         {
-            Console.WriteLine(actual + "  expected " + expected);
-
-            Debug.Assert(Math.Abs(actual - expected) < 1e-12);
+            Debug.Assert(Math.Abs(actual - expected) < 1e-12, actual + "  expected " + expected);
         }
 
         [DebuggerNonUserCode]
         public static void AssertEqual(Angle actual, double expected)
         {
-            Console.WriteLine(actual + "  expected " + (Angle)expected);
-
-            Debug.Assert(Math.Abs((double)actual - expected) < 1e-12);
+            Debug.Assert(Math.Abs((double)actual - expected) < 1e-12, actual + "  expected " + (Angle)expected);
         }
 
         [DebuggerNonUserCode]
         public static void AssertEqual(Angle actual, Angle expected)
         {
-            Console.WriteLine(actual + "  expected " + expected);
-            Debug.Assert(Math.Abs((double)(actual - expected)) < 1e-6);
+            Debug.Assert(Math.Abs((actual - expected).Degrees) < 1, actual + "  expected " + expected);
         }
     }
 
