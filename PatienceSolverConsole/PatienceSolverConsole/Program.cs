@@ -20,8 +20,7 @@ namespace PatienceSolverConsole
             {
                 currentFieldNumber++;
 
-                var field = new PatienceField();
-                field.FillWithRandomCards(new Random(currentFieldNumber));
+                var field = PatienceField.FillWithRandomCards(new Random(currentFieldNumber));
                 field.DumpToConsole();
                 TimeSpan timeout = TimeSpan.FromSeconds(30);
                 var stopwatch = Stopwatch.StartNew();
@@ -113,17 +112,17 @@ namespace PatienceSolverConsole
         {
             switch (p)
             {
-                case '1': return field.PlayStacks[0];
-                case '2': return field.PlayStacks[1];
-                case '3': return field.PlayStacks[2];
-                case '4': return field.PlayStacks[3];
-                case '5': return field.PlayStacks[4];
-                case '6': return field.PlayStacks[5];
-                case '7': return field.PlayStacks[6];
-                case 'a': return field.FinishStacks[0];
-                case 'b': return field.FinishStacks[1];
-                case 'c': return field.FinishStacks[2];
-                case 'd': return field.FinishStacks[3];
+                case '1': return field.PlayStacks.Take(1).Last();
+                case '2': return field.PlayStacks.Take(1).Last();
+                case '3': return field.PlayStacks.Take(2).Last();
+                case '4': return field.PlayStacks.Take(3).Last();
+                case '5': return field.PlayStacks.Take(4).Last();
+                case '6': return field.PlayStacks.Take(5).Last();
+                case '7': return field.PlayStacks.Take(6).Last();
+                case 'a': return field.FinishStacks.Take(0).Last();
+                case 'b': return field.FinishStacks.Take(1).Last();
+                case 'c': return field.FinishStacks.Take(2).Last();
+                case 'd': return field.FinishStacks.Take(3).Last();
                 case '0': return field.Stock;
             }
             Console.WriteLine("Unknown stack {0}", p);

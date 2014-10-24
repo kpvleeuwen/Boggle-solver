@@ -100,8 +100,7 @@ namespace PatienceSolverConsole
 
         private void TryAddWork(SolverEntry currentEntry, PatienceField newField)
         {
-           newField. DoTrivialMoves();
-            newField.InvalidateHash();
+            newField = newField.DoTrivialMoves();
             if (!Previous.Contains(newField))
             {
                 Previous.Add(newField);

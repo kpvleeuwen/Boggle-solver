@@ -7,7 +7,10 @@ using System.IO;
 
 namespace PatienceSolverConsole
 {
-    [Serializable]
+
+    /// <summary>
+    /// Immutable representation of a patience field state
+    /// </summary>
     public class PatienceField
     {
         /// <summary>
@@ -26,50 +29,49 @@ namespace PatienceSolverConsole
         /// <returns></returns>
         public IEnumerable<CardStack> GetOriginStacks()
         {
-            return (new CardStack[] { Stock })
-                .Concat(PlayStacks.ToArray());
+            yield return Stock;
+            foreach (var stack in PlayStacks)
+                yield return stack;
         }
 
 
-        public List<PlayStack> PlayStacks { get; private set; }
-        public List<FinishStack> FinishStacks { get; private set; }
+        public IEnumerable<PlayStack> PlayStacks { get; private set; }
+        public IEnumerable<FinishStack> FinishStacks { get; private set; }
         public Stock Stock { get; private set; }
 
         private int _hash;
-        protected bool _hashDirty;
 
-        public PatienceField()
+        public PatienceField(Stock stock, IEnumerable<PlayStack> playStacks, IEnumerable<FinishStack> finishStacks)
         {
-            PlayStacks = new List<PlayStack>();
-            FinishStacks = new List<FinishStack>();
-            InvalidateHash();
+            Stock = stock;
+            PlayStacks = playStacks;
+            FinishStacks = finishStacks;
+            _hash = DoGetHashCode();
         }
 
-        public void FillWithRandomCards(Random random)
+        public static PatienceField FillWithRandomCards(Random random)
         {
             var cards = GetStock().ToList();
             Util.Shuffle(cards, random);
             var stackless = cards.Where(c => c.Stack == null);
+            var playstacks = new List<PlayStack>();
+            var finishstacks = new List<FinishStack>();
             for (int playstack = 1; playstack <= 7; playstack++)
             {
                 var stack = new PlayStack(stackless.Take(playstack));
-                PlayStacks.Add(stack);
+                playstacks.Add(stack);
             }
             for (int finishstack = 1; finishstack <= 4; finishstack++)
             {
                 var stack = new FinishStack();
-                FinishStacks.Add(stack);
+                finishstacks.Add(stack);
             }
-            Stock = new Stock(stackless);
-            InvalidateHash();
+            var stock = new Stock(stackless);
+
+            return new PatienceField(stock, playstacks, finishstacks);
         }
 
-        public void InvalidateHash()
-        {
-            _hashDirty = true;
-        }
-
-        private IEnumerable<Card> GetStock()
+        public static IEnumerable<Card> GetStock()
         {
             foreach (var suit in Util.GetValues<Suit>())
                 foreach (var value in Util.GetValues<Value>())
@@ -124,11 +126,6 @@ namespace PatienceSolverConsole
 
         public override int GetHashCode()
         {
-            if (_hashDirty)
-            {
-                _hash = DoGetHashCode();
-                _hashDirty = false;
-            }
             return _hash;
         }
 
@@ -144,7 +141,6 @@ namespace PatienceSolverConsole
         public bool IsDone()
         {
             return
-                //new[] { (CardStack)Stock }.Concat(PlayStacks.Cast<CardStack>())
                 PlayStacks
                 .SelectMany(s => s)
                 .All(card => card.Visible);
@@ -156,7 +152,7 @@ namespace PatienceSolverConsole
             return (int)c.Value;
         }
 
-        public void DoTrivialMoves()
+        public PatienceField DoTrivialMoves()
         {
             var stacks = GetOriginStacks().ToList();
             bool changed;
@@ -178,6 +174,7 @@ namespace PatienceSolverConsole
                         }
                     }
             } while (changed);
+            return this;
         }
 
 
