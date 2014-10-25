@@ -15,7 +15,14 @@ namespace PatienceSolverConsole
 
         static void Main(string[] args)
         {
-            int currentFieldNumber = GetLastField();
+            if (args.Contains("play"))
+                PlayGame(PatienceField.FillWithRandomCards(new Random()));
+            else
+                SolveField(GetLastField());
+        }
+
+        private static int SolveField(int currentFieldNumber)
+        {
             while (true)
             {
                 currentFieldNumber++;
@@ -56,7 +63,7 @@ namespace PatienceSolverConsole
         private static SolverEntry TrySolve(PatienceField field, TimeSpan timeout)
         {
             Console.WriteLine(timeout);
-            var solver = new Solver(field, silent:true);
+            var solver = new Solver(field, silent: true);
             SolverEntry result = null;
             var solverThread = new Thread(() => result = solver.Solve());
             solverThread.Start();
@@ -83,29 +90,29 @@ namespace PatienceSolverConsole
                 {
                     var from = field.GetStack(input[0]);
                     var to = field.GetStack(input[1]);
-                    Move(from, to);
+                    field = Move(field, from, to);
                     if (field.IsDone())
                         break;
                 }
             } while (input != "exit");
         }
 
-        private static void Move(CardStack from, CardStack to)
+        private static PatienceField Move(PatienceField field, CardStack from, CardStack to)
         {
             if (from == null || to == null)
             {
                 Console.WriteLine("Invalid move: unknown stack");
-                return;
+                return field;
             }
 
-            var cardToMove = from.GetMovableCards().FirstOrDefault(to.CanAccept);
+            var cardToMove = from.GetMovableCards().FirstOrDefault(c => to.CanAccept(c, from));
             if (cardToMove == null)
             {
                 Console.WriteLine("Invalid move: none of the cards on from can enter destination");
-                return;
+                return field;
             }
-            from.Move(cardToMove, to);
-            return;
+            return field.Move(cardToMove, from, to);
+
         }
 
         private static CardStack GetStack(this PatienceField field, char p)

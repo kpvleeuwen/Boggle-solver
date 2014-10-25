@@ -7,18 +7,17 @@ using System.Diagnostics;
 
 namespace PatienceSolverConsole
 {
-
-    [Serializable]
+    /// <summary>
+    /// Immutable stack of cards
+    /// </summary>
     public abstract class CardStack : IEnumerable<Card>
     {
         public CardStack(IEnumerable<Card> cards)
         {
             Cards = new List<Card>(cards);
-            foreach (var card in Cards)
-                card.Stack = this;
             if (Top != null)
-                Top.Visible = true;
-            _hashDirty = true;
+                Cards[Count - 1] = Top.AsVisible();
+            _hash = DoGetHashCode();
         }
 
         protected virtual IList<Card> Cards { get; private set; }
@@ -26,7 +25,6 @@ namespace PatienceSolverConsole
         public int Count { get { return Cards.Count; } }
 
         private int _hash;
-        protected bool _hashDirty;
 
         public IEnumerator<Card> GetEnumerator()
         {
@@ -43,31 +41,18 @@ namespace PatienceSolverConsole
             return Cards.Reverse().TakeWhile(c => c.Visible);
         }
 
+        public abstract bool CanAccept(Card c, CardStack from);
 
-        public event EventHandler<EventArgs> StackChanged;
+        protected abstract CardStack DoAccept(Card c, CardStack from);
 
-        protected void OnStackChanged()
+        internal CardStack Accept(Card c, CardStack from)
         {
-            if (StackChanged != null)
-                StackChanged(this, new EventArgs());
-        }
-
-        public abstract bool CanAccept(Card c);
-
-        protected abstract void DoAccept(Card c);
-
-        internal void Accept(Card c)
-        {
-            if (!CanAccept(c))
+            if (!CanAccept(c, from))
                 throw new InvalidOperationException();
-            DoAccept(c);
-            c.Stack = this;
-            _hashDirty = true;
-            Debug.Assert(Top.Visible, "invisible top");
-            OnStackChanged();
+            return DoAccept(c, from);
         }
 
-        public abstract void Move(Card c, CardStack s);
+        internal abstract CardStack Remove(Card c);
 
         /// <summary>
         /// Writes a ascii art line of cards to s, returns true if more lines are to be written.
@@ -92,11 +77,6 @@ namespace PatienceSolverConsole
 
         public override int GetHashCode()
         {
-            if (_hashDirty)
-            {
-                _hash = DoGetHashCode();
-                _hashDirty = false;
-            }
             return _hash;
         }
 
@@ -128,14 +108,12 @@ namespace PatienceSolverConsole
     public class Stock : CardStack
     {
         public Stock(IEnumerable<Card> cards)
-            : base(cards)
-        {
-            foreach (var card in Cards)
-                card.Visible = true; // only valid on 'infite one card draw' games
-        }
+            : base(cards.Select(c => c.AsVisible()))
+        { }
 
-        protected override void DoAccept(Card c)
+        protected override CardStack DoAccept(Card c, CardStack from)
         {
+            // Cards cannot return to stock
             throw new InvalidOperationException();
         }
 
@@ -146,40 +124,23 @@ namespace PatienceSolverConsole
             return base.GetMovableCards();
         }
 
-        public override bool CanAccept(Card c)
+        public override bool CanAccept(Card c, CardStack from)
         {
             return false;
         }
 
-        public override void Move(Card c, CardStack s)
+        internal override CardStack Remove(Card c)
         {
-            if (!c.Visible)
-                throw new InvalidOperationException("card is invisible");
-            if (c.Stack != this)
-                throw new InvalidOperationException("not owned by me");
-            //if (Top != c)
-            //    throw new InvalidOperationException("not top");
-            s.Accept(c);
-            Cards.Remove(c);
-            _hashDirty = true;
-
-            OnStackChanged();
-            // New top is visible
-            if (Top != null)
-                Top.Visible = true;
+            return new Stock(Cards.Where(cd => cd != c));
         }
 
-        public void NextCard()
+        public Stock NextCard()
         {
             if (Cards.Count < 2)
-                return;
-            var oldTop = Top;
-            oldTop.Visible = false;
-            Cards.Add(Cards[0]);
-            Cards.RemoveAt(0);
-            _hashDirty = true;
-            Top.Visible = true;
-            OnStackChanged();
+                return this;
+            // Move the old top to the bottom
+
+            return new Stock(new[] { Top }.Concat(Cards.Except(new[] { Top })));
         }
 
         /// <summary>
@@ -215,45 +176,40 @@ namespace PatienceSolverConsole
         public bool JustMoveTop { get; set; }
     }
 
-    [Serializable]
     public class PlayStack : CardStack
     {
         public PlayStack(IEnumerable<Card> cards) : base(cards) { }
 
-        protected override void DoAccept(Card c)
+        protected override CardStack DoAccept(Card c, CardStack from)
         {
-            Cards.Add(c);
+            if (from is PlayStack)
+            {
+                // all cards on top of this c are moved too
+                var playablecards = from.GetMovableCards().TakeWhile(mc => mc != c);
+
+                return new PlayStack(Cards.Concat(new[] { c }).Concat(playablecards));
+            }
+            return new PlayStack(Cards.Concat(new[] { c }));
         }
 
-        public override bool CanAccept(Card c)
+        public override IEnumerable<Card> GetMovableCards()
         {
-            if (!c.Visible)
-                return false;
+            return base.GetMovableCards();
+        }
+
+        public override bool CanAccept(Card c, CardStack from)
+        {
             if (Top == null)
-                return c.Value == Value.King && c.Stack.First() != c; //  no sense in moving kings around
+                return c.Value == Value.King && !(from is PlayStack && c == from.First()); // it makes no sense to move kings around
             if (c.Value == Value.Ace)
                 return false;
             return (int)c.Value == (int)Top.Value - 1 && c.Color != Top.Color;
         }
 
-        public override void Move(Card c, CardStack s)
+        internal override CardStack Remove(Card c)
         {
-            if (!c.Visible)
-                throw new InvalidOperationException("card is invisible");
-            if (c.Stack != this)
-                throw new InvalidOperationException("not owned by me");
-            var tomove = Cards.Skip(Cards.IndexOf(c)).ToArray();
-            foreach (var card in tomove)
-            {
-                s.Accept(card);
-                Cards.Remove(card);
-                _hashDirty = true;
-            }
-            // New top is visible
-            if (Top != null)
-                Top.Visible = true;
-
-            OnStackChanged();
+            // leftovers are all cards until the card to move
+            return new PlayStack(Cards.TakeWhile(cs => cs != c));
         }
 
         /// <summary>
@@ -283,52 +239,28 @@ namespace PatienceSolverConsole
         }
     }
 
-
-    [Serializable]
     public class FinishStack : CardStack
     {
         public FinishStack(IEnumerable<Card> cards) : base(cards) { }
         public FinishStack() : this(new Card[] { }) { }
 
-        protected override void DoAccept(Card c)
+        protected override CardStack DoAccept(Card c, CardStack from)
         {
-            Debug.Assert(c.Visible);
-            if (Top != null)
-                Top.Visible = false; // the old top is not visible any more
-            Cards.Add(c); // this one's visible
+            return new FinishStack(Cards.Concat(new[] { c }));
         }
 
-        public override bool CanAccept(Card c)
+        public override bool CanAccept(Card c, CardStack from)
         {
-            if (c != c.Stack.Top && c.Stack is PlayStack)
-                return false; // a finishstack can only accept top cards from other stacks
-            if (c.Stack is FinishStack)
-                return false; // no sense in moving aces around
-            if (!c.Visible)
+            if (from is PlayStack && c != from.Top)
                 return false;
             if (Top == null)
                 return c.Value == Value.Ace;
             return (int)c.Value == (int)Top.Value + 1 && c.Suit == Top.Suit;
-
         }
 
-        public override void Move(Card c, CardStack s)
+        internal override CardStack Remove(Card c)
         {
-            if (s == this)
-                throw new InvalidOperationException("same stack");
-            if (!c.Visible)
-                throw new InvalidOperationException("card is invisible");
-            if (c.Stack != this)
-                throw new InvalidOperationException("not owned by me");
-            if (Top != c)
-                throw new InvalidOperationException("not top");
-            s.Accept(c);
-            Cards.Remove(c);
-            _hashDirty = true;
-            // New top is visible
-            if (Top != null)
-                Top.Visible = true;
-            OnStackChanged();
+            return new FinishStack(Cards.Where(cd => cd != c));
         }
 
         /// <summary>
@@ -340,7 +272,6 @@ namespace PatienceSolverConsole
         /// <returns></returns>
         public override bool WriteLine(int line)
         {
-
             using (new BlockConsoleColor(ConsoleColor.Gray, ConsoleColor.DarkGreen))
             {
                 bool morelines = false;

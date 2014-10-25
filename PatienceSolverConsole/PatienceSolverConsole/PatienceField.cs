@@ -53,12 +53,13 @@ namespace PatienceSolverConsole
         {
             var cards = GetStock().ToList();
             Util.Shuffle(cards, random);
-            var stackless = cards.Where(c => c.Stack == null);
+            IEnumerable<Card> stackless = cards;
             var playstacks = new List<PlayStack>();
             var finishstacks = new List<FinishStack>();
             for (int playstack = 1; playstack <= 7; playstack++)
             {
                 var stack = new PlayStack(stackless.Take(playstack));
+                stackless = stackless.Skip(playstack);
                 playstacks.Add(stack);
             }
             for (int finishstack = 1; finishstack <= 4; finishstack++)
@@ -71,6 +72,10 @@ namespace PatienceSolverConsole
             return new PatienceField(stock, playstacks, finishstacks);
         }
 
+        /// <summary>
+        /// returns all cards of every suit, ordered by suit.
+        /// </summary>
+        /// <returns></returns>
         public static IEnumerable<Card> GetStock()
         {
             foreach (var suit in Util.GetValues<Suit>())
@@ -78,6 +83,9 @@ namespace PatienceSolverConsole
                     yield return new Card(suit, value);
         }
 
+        /// <summary>
+        /// Prints the field to Console.Out
+        /// </summary>
         public void DumpToConsole()
         {
             var toprow = FinishStacks.Cast<CardStack>()
@@ -85,6 +93,7 @@ namespace PatienceSolverConsole
             DumpRows(toprow);
             DumpRows(PlayStacks.ToArray());
         }
+
 
         private static void DumpRows(IEnumerable<CardStack> toprow)
         {
@@ -152,15 +161,31 @@ namespace PatienceSolverConsole
             return (int)c.Value;
         }
 
+        public PatienceField Move(Card toMove, CardStack from, CardStack to)
+        {
+            var newto = to.Accept(toMove, from);
+            var newfrom = from.Remove(toMove);
+            return new PatienceField(
+                Replace(Stock, from, newfrom),
+                PlayStacks.Select(ps => Replace(ps, from, newfrom)).Select(ps => Replace(ps, to, newto)),
+                FinishStacks.Select(ps => Replace(ps, from, newfrom)).Select(ps => Replace(ps, to, newto))
+                );
+        }
+
+        private T Replace<T>(T instance, object tosearch, object replacement)
+        {
+            if (object.ReferenceEquals(tosearch, instance))
+                return (T)replacement;
+            return instance;
+        }
+
         public PatienceField DoTrivialMoves()
         {
             var stacks = GetOriginStacks().ToList();
-            bool changed;
-            do
-            {
-                changed = false;
-                foreach (var card in stacks.SelectMany(s => s.GetMovableCards()))
-                    foreach (var dest in FinishStacks.Where(s => s.CanAccept(card)))
+
+            foreach (var stack in stacks)
+                foreach (var card in stack.GetMovableCards())
+                    foreach (var dest in FinishStacks.Where(s => s.CanAccept(card, stack)))
                     {
                         if (FinishStacks.Select(f => GetValue(f.Top)).All(
                             value => value >= GetValue(card) - 2))
@@ -169,11 +194,9 @@ namespace PatienceSolverConsole
                             // cannot block another card: 
                             // all cards that can go on top of this card, 
                             // can also enter their finish stack.
-                            card.Move(dest);
-                            changed = true;
+                            return Move(card, stack, dest).DoTrivialMoves();
                         }
                     }
-            } while (changed);
             return this;
         }
 

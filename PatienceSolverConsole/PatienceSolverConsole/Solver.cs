@@ -69,31 +69,25 @@ namespace PatienceSolverConsole
                 }
                 else
                 {
-                    SetClone(_current);
-                    //var nextCardField = GetClone();
-                    //nextCardField.Stock.NextCard();
-                    //TryAddWork(currentEntry, nextCardField);
-
                     var stacks = _current.GetOriginStacks().ToList();
-                    foreach (var card in stacks.SelectMany(s => s.GetMovableCards()))
-                        foreach (var dest in _current.GetDestinationStacks().Where(s => s.CanAccept(card)))
-                        {
-                            TryMove(currentEntry, card, dest);
-                            if (card.Value == Value.Ace || card.Value == Value.King) break;
-                        }
+                    foreach (var stack in stacks)
+                        foreach (var card in stack.GetMovableCards())
+                            foreach (var dest in _current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
+                            {
+                                TryMove(currentEntry, card, stack, dest);
+                                if (card.Value == Value.Ace || card.Value == Value.King) break;
+                            }
                 }
             }
             Log("######### No solution, time: {1}, evaluated {2} cases ########", stopwatch.Elapsed, _move);
             return null;
         }
 
-        private void TryMove(SolverEntry currentEntry, Card card, CardStack dest)
+        private void TryMove(SolverEntry currentEntry, Card card, CardStack from, CardStack dest)
         {
-            var newField = GetClone();
-            var newStacks = newField.GetOriginStacks();
-            var newDest = newField.GetDestinationStacks().First(s => s.Equals(dest));
-            var newCard = newStacks.SelectMany(s => s.GetMovableCards()).First(c => c.Equals(card));
-            newCard.Stack.Move(newCard, newDest);
+            var field = currentEntry.Field;
+
+            var newField = field.Move(card, from, dest);
             TryAddWork(currentEntry, newField);
         }
 

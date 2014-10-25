@@ -42,17 +42,18 @@ namespace PatienceSolverConsole
     [Serializable]
     public class Card
     {
-        public Card(Suit suit, Value value)
+        public Card(Suit suit, Value value, bool visible = false)
         {
-            this.Suit = suit;
-            this.Value = value;
+            Suit = suit;
+            Value = value;
+            Visible = visible;
         }
-
+        
         public Suit Suit { get; private set; }
 
         public Value Value { get; private set; }
 
-        public bool Visible { get; set; }
+        public bool Visible { get; private set; }
 
         public CardColor Color
         {
@@ -68,9 +69,9 @@ namespace PatienceSolverConsole
             }
         }
 
-        public CardStack Stack { get; set; }
-
         public const int Height = 6;
+        private Suit Suit1;
+        private Value Value1;
         public bool WriteLine(int line)
         {
             using (new BlockConsoleColor(ConsoleColor.Black, ConsoleColor.Gray))
@@ -143,11 +144,6 @@ namespace PatienceSolverConsole
             return (((int)Value) << 2 | (int)Suit).GetHashCode();
         }
 
-        public void Move(CardStack dest)
-        {
-            Stack.Move(this, dest);
-        }
-
         public static IEnumerable<Card> Random(int max)
         {
             var random = new Random();
@@ -167,6 +163,12 @@ namespace PatienceSolverConsole
         {
             var values = Enum.GetValues(typeof(T));
             return (T)values.GetValue(rnd.Next(values.Length));
+        }
+
+        internal Card AsVisible()
+        {
+            if(Visible) return this;
+            return new Card(Suit, Value, visible: true);
         }
     }
 
