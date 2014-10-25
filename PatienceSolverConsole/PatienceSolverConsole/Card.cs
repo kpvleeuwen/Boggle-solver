@@ -170,6 +170,12 @@ namespace PatienceSolverConsole
             if(Visible) return this;
             return new Card(Suit, Value, visible: true);
         }
+
+        internal Card AsInvisible()
+        {
+            if (!Visible) return this;
+            return new Card(Suit, Value, visible: false);
+        }
     }
 
     public static class CardUtils

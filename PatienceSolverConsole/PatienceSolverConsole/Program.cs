@@ -16,7 +16,7 @@ namespace PatienceSolverConsole
         static void Main(string[] args)
         {
             if (args.Contains("play"))
-                PlayGame(PatienceField.FillWithRandomCards(new Random()));
+                PlayGame(PatienceField.FillWithRandomCards(new Random(4)));
             else
                 SolveField(GetLastField());
         }
@@ -79,13 +79,14 @@ namespace PatienceSolverConsole
 
         private static void PlayGame(PatienceField field)
         {
+            field.Stock.JustMoveTop = true;
             string input;
             do
             {
                 field.DumpToConsole();
                 input = Console.ReadLine();
                 if (input.Length < 2)
-                    field.Stock.NextCard();
+                    field = field.NextCard();
                 else if (input.Length == 2)
                 {
                     var from = field.GetStack(input[0]);
@@ -120,16 +121,16 @@ namespace PatienceSolverConsole
             switch (p)
             {
                 case '1': return field.PlayStacks.Take(1).Last();
-                case '2': return field.PlayStacks.Take(1).Last();
-                case '3': return field.PlayStacks.Take(2).Last();
-                case '4': return field.PlayStacks.Take(3).Last();
-                case '5': return field.PlayStacks.Take(4).Last();
-                case '6': return field.PlayStacks.Take(5).Last();
-                case '7': return field.PlayStacks.Take(6).Last();
-                case 'a': return field.FinishStacks.Take(0).Last();
-                case 'b': return field.FinishStacks.Take(1).Last();
-                case 'c': return field.FinishStacks.Take(2).Last();
-                case 'd': return field.FinishStacks.Take(3).Last();
+                case '2': return field.PlayStacks.Take(2).Last();
+                case '3': return field.PlayStacks.Take(3).Last();
+                case '4': return field.PlayStacks.Take(4).Last();
+                case '5': return field.PlayStacks.Take(5).Last();
+                case '6': return field.PlayStacks.Take(6).Last();
+                case '7': return field.PlayStacks.Take(7).Last();
+                case 'a': return field.FinishStacks.Take(1).Last();
+                case 'b': return field.FinishStacks.Take(2).Last();
+                case 'c': return field.FinishStacks.Take(3).Last();
+                case 'd': return field.FinishStacks.Take(4).Last();
                 case '0': return field.Stock;
             }
             Console.WriteLine("Unknown stack {0}", p);

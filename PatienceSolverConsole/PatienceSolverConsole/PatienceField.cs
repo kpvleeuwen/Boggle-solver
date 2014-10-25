@@ -67,7 +67,7 @@ namespace PatienceSolverConsole
                 var stack = new FinishStack();
                 finishstacks.Add(stack);
             }
-            var stock = new Stock(stackless);
+            var stock = new Stock(stackless, false);
 
             return new PatienceField(stock, playstacks, finishstacks);
         }
@@ -200,7 +200,10 @@ namespace PatienceSolverConsole
             return this;
         }
 
-
+        internal PatienceField NextCard()
+        {
+            return new PatienceField(Stock.NextCard(), PlayStacks, FinishStacks);
+        }
     }
 
     static class Util

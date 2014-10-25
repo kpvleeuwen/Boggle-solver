@@ -107,9 +107,11 @@ namespace PatienceSolverConsole
     [Serializable]
     public class Stock : CardStack
     {
-        public Stock(IEnumerable<Card> cards)
+        public Stock(IEnumerable<Card> cards, bool justMoveTop)
             : base(cards.Select(c => c.AsVisible()))
-        { }
+        {
+            JustMoveTop = justMoveTop;
+        }
 
         protected override CardStack DoAccept(Card c, CardStack from)
         {
@@ -120,7 +122,7 @@ namespace PatienceSolverConsole
         public override IEnumerable<Card> GetMovableCards()
         {
             if (JustMoveTop)
-                return base.GetMovableCards().Take(1);
+                return new[] { Top };
             return base.GetMovableCards();
         }
 
@@ -131,7 +133,7 @@ namespace PatienceSolverConsole
 
         internal override CardStack Remove(Card c)
         {
-            return new Stock(Cards.Where(cd => cd != c));
+            return new Stock(Cards.Where(cd => cd != c), JustMoveTop);
         }
 
         public Stock NextCard()
@@ -140,7 +142,7 @@ namespace PatienceSolverConsole
                 return this;
             // Move the old top to the bottom
 
-            return new Stock(new[] { Top }.Concat(Cards.Except(new[] { Top })));
+            return new Stock(new[] { Top }.Concat(Cards.Except(new[] { Top })), JustMoveTop);
         }
 
         /// <summary>
@@ -163,7 +165,7 @@ namespace PatienceSolverConsole
                 Console.Write(" ");
                 if (Cards.Count > 1)
                 {
-                    Cards[Cards.Count - 2].WriteLine(line);
+                    Cards[Cards.Count - 2].AsInvisible().WriteLine(line);
                 }
                 else
                 {
@@ -185,9 +187,8 @@ namespace PatienceSolverConsole
             if (from is PlayStack)
             {
                 // all cards on top of this c are moved too
-                var playablecards = from.GetMovableCards().TakeWhile(mc => mc != c);
-
-                return new PlayStack(Cards.Concat(new[] { c }).Concat(playablecards));
+                var playablecards = from.SkipWhile(mc => mc != c);
+                return new PlayStack(Cards.Concat(playablecards));
             }
             return new PlayStack(Cards.Concat(new[] { c }));
         }
