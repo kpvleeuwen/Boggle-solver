@@ -74,11 +74,9 @@ namespace PatienceSolverConsole
         private void TryMove(SolverEntry currentEntry, Card card, CardStack from, CardStack dest)
         {
             var field = currentEntry.Field;
-
             var newField = field.Move(card, from, dest);
             TryAddWork(currentEntry, newField);
         }
-
 
         private void TryAddWork(SolverEntry currentEntry, PatienceField newField)
         {
@@ -111,6 +109,5 @@ namespace PatienceSolverConsole
                 current = current.Previous;
             }
         }
-
     }
 }
