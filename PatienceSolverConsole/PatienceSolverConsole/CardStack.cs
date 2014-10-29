@@ -12,34 +12,12 @@ namespace PatienceSolverConsole
     /// </summary>
     public abstract class CardStack : IEnumerable<Card>
     {
-        public CardStack(IEnumerable<Card> cards)
-        {
-            Cards = new List<Card>(cards);
-            if (Top != null)
-                Cards[Count - 1] = Top.AsVisible();
-            _hash = DoGetHashCode();
-        }
+        protected CardStack() { }
 
-        protected virtual IList<Card> Cards { get; private set; }
-        public Card Top { get { return Cards.LastOrDefault(); } }
-        public int Count { get { return Cards.Count; } }
+        public abstract Card Top { get; }
+        public abstract int Count { get; }
 
-        private int _hash;
-
-        public IEnumerator<Card> GetEnumerator()
-        {
-            return Cards.GetEnumerator();
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public virtual IEnumerable<Card> GetMovableCards()
-        {
-            return Cards.Reverse().TakeWhile(c => c.Visible);
-        }
+        public abstract IEnumerable<Card> GetMovableCards();
 
         public abstract bool CanAccept(Card c, CardStack from);
 
@@ -51,6 +29,8 @@ namespace PatienceSolverConsole
                 throw new InvalidOperationException();
             return DoAccept(c, from);
         }
+
+        public abstract IEnumerator<Card> GetEnumerator();
 
         internal abstract CardStack Remove(Card c);
 
@@ -75,19 +55,8 @@ namespace PatienceSolverConsole
         }
 
 
-        public override int GetHashCode()
-        {
-            return _hash;
-        }
+        public override abstract int GetHashCode();
 
-        protected virtual int DoGetHashCode()
-        {
-            if (Cards.Count == 0) return 0;
-            var hashcode = 0;
-            foreach (var card in Cards)
-                hashcode = hashcode * 81 + card.GetHashCode();
-            return hashcode;
-        }
 
         public override bool Equals(object obj)
         {
@@ -98,14 +67,64 @@ namespace PatienceSolverConsole
                 return false;
             if (GetHashCode() != stack.GetHashCode())
                 return false;
-            if (Cards.Count == 0)
+            if (Count == 0 && stack.Count == 0)
                 return true;
-            return Cards.SequenceEqual(stack.Cards);
+            return this.SequenceEqual(stack);
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return (System.Collections.IEnumerator)this.GetEnumerator();
         }
     }
 
-    [Serializable]
-    public class Stock : CardStack
+    public abstract class ListBasedCardStack : CardStack
+    {
+        public ListBasedCardStack(IEnumerable<Card> cards)
+        {
+            Cards = new List<Card>(cards);
+            if (Top != null)
+                Cards[Count - 1] = Top.AsVisible();
+            _hash = DoGetHashCode();
+        }
+
+        protected virtual IList<Card> Cards { get; private set; }
+        public override Card Top { get { return Cards.LastOrDefault(); } }
+        public override int Count { get { return Cards.Count; } }
+
+        private int _hash;
+
+        private int DoGetHashCode()
+        {
+            if (Cards.Count == 0) return 0;
+            var hashcode = 0;
+            foreach (var card in Cards)
+                hashcode = hashcode * 81 + card.GetHashCode();
+            return hashcode;
+        }
+
+        public override int GetHashCode()
+        {
+            return _hash;
+        }
+
+        /// <summary>
+        /// Enumerates the cards of this stack from bottom to top
+        /// </summary>
+        /// <returns></returns>
+        public override IEnumerator<Card> GetEnumerator()
+        {
+            return Cards.GetEnumerator();
+        }
+
+        public override IEnumerable<Card> GetMovableCards()
+        {
+            return Cards.Reverse().TakeWhile(c => c.Visible);
+        }
+    }
+
+
+    public class Stock : ListBasedCardStack
     {
         public Stock(IEnumerable<Card> cards, bool justMoveTop)
             : base(cards.Select(c => c.AsVisible()))
@@ -180,7 +199,65 @@ namespace PatienceSolverConsole
 
     public class PlayStack : CardStack
     {
-        public PlayStack(IEnumerable<Card> cards) : base(cards) { }
+        private class EmptyStack : PlayStack
+        {
+            public override IEnumerator<Card> GetEnumerator()
+            {
+                return GetMovableCards().GetEnumerator();
+            }
+
+            public override IEnumerable<Card> GetMovableCards()
+            {
+                return Enumerable.Empty<Card>();
+            }
+
+            public override int Count { get { return 0; } }
+
+            public override int GetHashCode()
+            {
+                return 381;
+            }
+        }
+
+        private static PlayStack Empty = new EmptyStack();
+        public static PlayStack Create(IEnumerable<Card> cards)
+        {
+            return Create(PlayStack.Empty, cards);
+        }
+
+        private static PlayStack Create(PlayStack parent, IEnumerable<Card> cards)
+        {
+            foreach (var card in cards)
+            {
+                parent = new PlayStack(parent, card);
+            }
+            return parent.WithTopVisible();
+        }
+
+        private Card _top;
+        private int _count;
+        private int _hash;
+
+        private PlayStack() { }
+
+        private PlayStack(PlayStack parent, Card topCard)
+        {
+            Parent = parent;
+            _top = topCard;
+            _count = parent.Count + 1;
+            _hash = 81 * parent.GetHashCode() + _top.GetHashCode();
+        }
+
+        private PlayStack Parent { get; set; }
+
+        public override Card Top { get { return _top; } }
+
+        public override int Count { get { return _count; } }
+
+        public override int GetHashCode()
+        {
+            return _hash;
+        }
 
         protected override CardStack DoAccept(Card c, CardStack from)
         {
@@ -188,14 +265,24 @@ namespace PatienceSolverConsole
             {
                 // all cards on top of this c are moved too
                 var playablecards = from.SkipWhile(mc => mc != c);
-                return new PlayStack(Cards.Concat(playablecards));
+                return Create(this, playablecards);
             }
-            return new PlayStack(Cards.Concat(new[] { c }));
+            else
+            {
+                return new PlayStack(this, c);
+            }
         }
 
         public override IEnumerable<Card> GetMovableCards()
         {
-            return base.GetMovableCards();
+            if (Top.Visible)
+            {
+                yield return Top;
+                foreach (var movablecard in Parent.GetMovableCards())
+                    yield return movablecard;
+            }
+            else
+                yield break;
         }
 
         public override bool CanAccept(Card c, CardStack from)
@@ -207,11 +294,37 @@ namespace PatienceSolverConsole
             return (int)c.Value == (int)Top.Value - 1 && c.Color != Top.Color;
         }
 
-        internal override CardStack Remove(Card c)
+        private IEnumerable<Card> GetCards()
+        {
+            foreach( var bottomcard in Parent)
+                yield return bottomcard;
+            yield return Top;
+        }
+
+        public override IEnumerator<Card> GetEnumerator()
+        {
+            return GetCards().GetEnumerator();
+        }
+
+       internal override CardStack Remove(Card c)
         {
             // leftovers are all cards until the card to move
-            return new PlayStack(Cards.TakeWhile(cs => cs != c));
+            // Make sure the remaining stack has a visible top
+            if (Top == c)
+            {
+                if (Parent is EmptyStack)
+                    return Parent;
+                return Parent.WithTopVisible();
+            }
+            else return Parent.Remove(c);
         }
+
+       private PlayStack WithTopVisible()
+       {
+           if (Top.Visible)
+               return this;
+           return new PlayStack(Parent, Top.AsVisible());
+       }
 
         /// <summary>
         /// Writes a ascii art line of cards to s, returns true if more lines are to be written.
@@ -224,13 +337,14 @@ namespace PatienceSolverConsole
         {
             using (new BlockConsoleColor(ConsoleColor.Gray, ConsoleColor.DarkGreen))
             {
+                var cards = this.ToArray();
                 bool morelines;
-                if (Cards.Any())
+                if (Count > 0)
                 {
-                    if (line < 2 * (Cards.Count - 1))
-                        morelines = Cards[line / 2].WriteLine(line % 2);
+                    if (line < 2 * (Count - 1))
+                        morelines = cards[line / 2].WriteLine(line % 2);
                     else
-                        morelines = Top.WriteLine(line - (2 * (Cards.Count - 1)));
+                        morelines = Top.WriteLine(line - (2 * (Count - 1)));
                 }
                 else
                     morelines = WriteEmpty(line);
@@ -240,7 +354,7 @@ namespace PatienceSolverConsole
         }
     }
 
-    public class FinishStack : CardStack
+    public class FinishStack : ListBasedCardStack
     {
         public FinishStack(IEnumerable<Card> cards) : base(cards) { }
         public FinishStack() : this(new Card[] { }) { }

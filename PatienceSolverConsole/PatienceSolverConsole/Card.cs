@@ -70,8 +70,6 @@ namespace PatienceSolverConsole
         }
 
         public const int Height = 6;
-        private Suit Suit1;
-        private Value Value1;
         public bool WriteLine(int line)
         {
             using (new BlockConsoleColor(ConsoleColor.Black, ConsoleColor.Gray))

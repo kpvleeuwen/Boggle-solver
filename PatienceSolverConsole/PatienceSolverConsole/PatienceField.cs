@@ -58,7 +58,7 @@ namespace PatienceSolverConsole
             var finishstacks = new List<FinishStack>();
             for (int playstack = 1; playstack <= 7; playstack++)
             {
-                var stack = new PlayStack(stackless.Take(playstack));
+                var stack = PlayStack.Create(stackless.Take(playstack));
                 stackless = stackless.Skip(playstack);
                 playstacks.Add(stack);
             }
