@@ -5,15 +5,14 @@ using System.Text;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
+using System.Threading;
 
 namespace PatienceSolverConsole
 {
     public class Solver
     {
-        private PatienceField _current;
         private Stack<SolverEntry> _list;
-        private MemoryStream _stream;
-        private BinaryFormatter _formatter;
+        
         private int _move;
         private PatienceField _startfield;
         private readonly bool _silent;
@@ -22,8 +21,6 @@ namespace PatienceSolverConsole
         {
             Previous = new HashSet<PatienceField>();
             _list = new Stack<SolverEntry>();
-            _stream = new MemoryStream(256);
-            _formatter = new BinaryFormatter();
             _startfield = field;
             _silent = silent;
         }
@@ -34,50 +31,41 @@ namespace PatienceSolverConsole
             Console.WriteLine(format, args);
         }
 
-        private void SetClone(PatienceField toClone)
-        {
-            _stream.Position = 0;
-            _formatter.Serialize(_stream, toClone);
-        }
-
-        private PatienceField GetClone()
-        {
-            _stream.Position = 0;
-            return (PatienceField)_formatter.Deserialize(_stream);
-        }
-
-        public SolverEntry Solve()
+        public SolverEntry Solve(TimeSpan timeout)
         {
             var stopwatch = Stopwatch.StartNew();
             TryAddWork(null, _startfield);
-            while (_list.Any())
+
+            while (_list.Any() && stopwatch.Elapsed < timeout)
             {
                 var currentEntry = _list.Pop();
-                _current = currentEntry.Field;
+
+                var current = currentEntry.Field;
+                Interlocked.Increment(ref _move);
                 if (!_silent && _move % 100 == 0)
                 {
                     Console.WriteLine("======== {0} ({1} left, running {2})========", _move, _list.Count, stopwatch.Elapsed);
-                    _current.DumpToConsole();
+                    current.DumpToConsole();
                 }
 
-                _move++;
 
-                if (_current.IsDone())
+                if (current.IsDone())
                 {
                     Log("######### Won in {0} moves (time: {1}, evaluated {2} cases) ########", currentEntry.GetSequence().Count(), stopwatch.Elapsed, _move);
                     return currentEntry;
                 }
                 else
                 {
-                    var stacks = _current.GetOriginStacks().ToList();
+                    var stacks = current.GetOriginStacks().ToList();
                     foreach (var stack in stacks)
                         foreach (var card in stack.GetMovableCards())
-                            foreach (var dest in _current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
+                            foreach (var dest in current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
                             {
                                 TryMove(currentEntry, card, stack, dest);
                                 if (card.Value == Value.Ace || card.Value == Value.King) break;
                             }
                 }
+                return null;
             }
             Log("######### No solution, time: {1}, evaluated {2} cases ########", stopwatch.Elapsed, _move);
             return null;
