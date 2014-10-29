@@ -6,21 +6,22 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Diagnostics;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace PatienceSolverConsole
 {
     public class Solver
     {
-        private Stack<SolverEntry> _list;
-        
+        private Stack<SolverEntry> _toTry;
+        private HashSet<PatienceField> _knownFields;
         private int _move;
         private PatienceField _startfield;
         private readonly bool _silent;
 
         public Solver(PatienceField field, bool silent = false)
         {
-            Previous = new HashSet<PatienceField>();
-            _list = new Stack<SolverEntry>();
+            _knownFields = new HashSet<PatienceField>();
+            _toTry = new Stack<SolverEntry>();
             _startfield = field;
             _silent = silent;
         }
@@ -36,18 +37,12 @@ namespace PatienceSolverConsole
             var stopwatch = Stopwatch.StartNew();
             TryAddWork(null, _startfield);
 
-            while (_list.Any() && stopwatch.Elapsed < timeout)
+            while (_toTry.Any() && stopwatch.Elapsed < timeout)
             {
-                var currentEntry = _list.Pop();
+                var currentEntry = _toTry.Pop();
 
                 var current = currentEntry.Field;
                 Interlocked.Increment(ref _move);
-                if (!_silent && _move % 100 == 0)
-                {
-                    Console.WriteLine("======== {0} ({1} left, running {2})========", _move, _list.Count, stopwatch.Elapsed);
-                    current.DumpToConsole();
-                }
-
 
                 if (current.IsDone())
                 {
@@ -56,19 +51,24 @@ namespace PatienceSolverConsole
                 }
                 else
                 {
-                    var stacks = current.GetOriginStacks().ToList();
-                    foreach (var stack in stacks)
-                        foreach (var card in stack.GetMovableCards())
-                            foreach (var dest in current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
-                            {
-                                TryMove(currentEntry, card, stack, dest);
-                                if (card.Value == Value.Ace || card.Value == Value.King) break;
-                            }
+                    DoMoves(currentEntry);
                 }
-                return null;
             }
-            Log("######### No solution, time: {1}, evaluated {2} cases ########", stopwatch.Elapsed, _move);
+            Log("######### No solution, time: {0}, evaluated {1} cases ########", stopwatch.Elapsed, _move);
             return null;
+        }
+
+        private void DoMoves(SolverEntry currentEntry)
+        {
+            var current = currentEntry.Field;
+            var stacks = current.GetOriginStacks().ToList();
+            foreach (var stack in stacks)
+                foreach (var card in stack.GetMovableCards())
+                    foreach (var dest in current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
+                    {
+                        TryMove(currentEntry, card, stack, dest);
+                        if (card.Value == Value.Ace || card.Value == Value.King) break;
+                    }
         }
 
         private void TryMove(SolverEntry currentEntry, Card card, CardStack from, CardStack dest)
@@ -81,14 +81,12 @@ namespace PatienceSolverConsole
         private void TryAddWork(SolverEntry currentEntry, PatienceField newField)
         {
             newField = newField.DoTrivialMoves();
-            if (!Previous.Contains(newField))
+
+            if (_knownFields.Add(newField))
             {
-                Previous.Add(newField);
-                _list.Push(new SolverEntry { Field = newField, Previous = currentEntry });
+                _toTry.Push(new SolverEntry { Field = newField, Previous = currentEntry });
             }
         }
-
-        public HashSet<PatienceField> Previous { get; set; }
     }
 
     public class SolverEntry

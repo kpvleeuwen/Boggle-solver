@@ -63,19 +63,10 @@ namespace PatienceSolverConsole
         private static SolverEntry TrySolve(PatienceField field, TimeSpan timeout)
         {
             Console.WriteLine(timeout);
-            var solver = new Solver(field, silent: true);
-            SolverEntry result = null;
-            var solverThread = new Thread(() => result = solver.Solve());
-            solverThread.Start();
-            if (!solverThread.Join(timeout))
-            {
-                solverThread.Abort();
-                return null;
-            }
+            var solver = new Solver(field, silent: false);
+            SolverEntry result = solver.Solve(timeout);
             return result;
         }
-
-
 
         private static void PlayGame(PatienceField field)
         {

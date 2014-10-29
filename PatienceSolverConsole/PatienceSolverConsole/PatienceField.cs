@@ -20,7 +20,7 @@ namespace PatienceSolverConsole
         public IEnumerable<CardStack> GetDestinationStacks()
         {
             return PlayStacks.Cast<CardStack>()
-                .Concat(FinishStacks.ToArray());
+                .Concat(FinishStacks.Cast<CardStack>());
         }
 
         /// <summary>
@@ -181,23 +181,36 @@ namespace PatienceSolverConsole
 
         public PatienceField DoTrivialMoves()
         {
-            var stacks = GetOriginStacks().ToList();
-
-            foreach (var stack in stacks)
-                foreach (var card in stack.GetMovableCards())
+            // Try the tops of the playstacks
+            foreach (var stack in PlayStacks)
+            {
+                if (stack.Count == 0) continue;
+                var card = stack.Top;
+                if (IsSafeToPlay(card))
+                {
                     foreach (var dest in FinishStacks.Where(s => s.CanAccept(card, stack)))
                     {
-                        if (FinishStacks.Select(f => GetValue(f.Top)).All(
-                            value => value >= GetValue(card) - 2))
-                        {
-                            // this move is always valid since it 
-                            // cannot block another card: 
-                            // all cards that can go on top of this card, 
-                            // can also enter their finish stack.
-                            return Move(card, stack, dest).DoTrivialMoves();
-                        }
+                        return Move(card, stack, dest).DoTrivialMoves();
                     }
+                }
+            }
+            // Try all stock cards
+            foreach (var stockcard in Stock.Where(IsSafeToPlay))
+                foreach (var dest in FinishStacks.Where(s => s.CanAccept(stockcard, Stock)))
+                {
+                    return Move(stockcard, Stock, dest).DoTrivialMoves();
+                }
             return this;
+        }
+
+        private bool IsSafeToPlay(Card card)
+        {   // this move does never block a solution since it 
+            // cannot block another card: 
+            // all cards that can go on top of this card, 
+            // can also enter their finish stack.
+            if (card.Value == Value.Ace) return true;
+            return FinishStacks.Select(f => GetValue(f.Top)).All(
+                                    value => value >= GetValue(card) - 2);
         }
 
         internal PatienceField NextCard()
