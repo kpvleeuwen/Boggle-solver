@@ -61,14 +61,37 @@ namespace PatienceSolverConsole
         private void DoMoves(SolverEntry currentEntry)
         {
             var current = currentEntry.Field;
-            var stacks = current.GetOriginStacks().ToList();
-            foreach (var stack in stacks)
+            // Play => finish, just top
+            foreach (var stack in current.PlayStacks.Where(s => s.Count > 0))
+                foreach (var dest in current.FinishStacks.Where(s => s.CanAccept(stack.Top, stack)))
+                {
+                    TryMove(currentEntry, stack.Top, stack, dest);
+                    if (stack.Top.Value == Value.Ace) break;
+                }
+            // Stock => everywhere
+            foreach (var card in current.Stock.GetMovableCards())
+                foreach (var dest in current.GetDestinationStacks().Where(s => s.CanAccept(card, current.Stock)))
+                {
+                    TryMove(currentEntry, card, current.Stock, dest);
+                    if (card.Value == Value.Ace || card.Value == Value.King) break;
+                }
+            
+            // Play => Play, partial stacks
+            foreach (var stack in current.PlayStacks)
                 foreach (var card in stack.GetMovableCards())
-                    foreach (var dest in current.GetDestinationStacks().Where(s => s.CanAccept(card, stack)))
+                    foreach (var dest in current.PlayStacks.Where(s => s.CanAccept(card, stack)))
                     {
                         TryMove(currentEntry, card, stack, dest);
-                        if (card.Value == Value.Ace || card.Value == Value.King) break;
                     }
+            // Possibly, move cards back from finish=>play
+            var min = current.FinishStacks.Min(s => s.GetTopValue()) + 1;
+            foreach (var stack in current.FinishStacks.Where(s => s.GetTopValue() > min))
+                foreach (var dest in current.PlayStacks.Where(s => s.CanAccept(stack.Top, stack)))
+                {
+                    TryMove(currentEntry, stack.Top, stack, dest);
+                    if (stack.Top.Value == Value.Ace) break;
+                }
+
         }
 
         private void TryMove(SolverEntry currentEntry, Card card, CardStack from, CardStack dest)

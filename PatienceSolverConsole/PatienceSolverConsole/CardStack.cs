@@ -28,6 +28,13 @@ namespace PatienceSolverConsole
             return DoAccept(c, from);
         }
 
+        public int GetTopValue()
+        {
+            if (Top == null)
+                return 0;
+            return (int)Top.Value;
+        }
+
         public abstract IEnumerator<Card> GetEnumerator();
 
         internal abstract CardStack Remove(Card c);
