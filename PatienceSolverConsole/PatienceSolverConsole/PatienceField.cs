@@ -40,12 +40,14 @@ namespace PatienceSolverConsole
         public Stock Stock { get; private set; }
 
         private int _hash;
+        private IList<PlayStack> _playStacksOrdered;
 
         public PatienceField(Stock stock, IEnumerable<PlayStack> playStacks, IEnumerable<FinishStack> finishStacks)
         {
             Stock = stock;
             PlayStacks = playStacks.ToList();
             FinishStacks = finishStacks.ToList();
+            _playStacksOrdered = PlayStacks.Where(s => s.Count > 0).OrderBy(s => s.Top.GetHashCode()).ToList();
             _hash = DoGetHashCode();
         }
 
@@ -125,10 +127,9 @@ namespace PatienceSolverConsole
                 return false; // this should be performant
             if (!Stock.Equals(other.Stock))
                 return false;
-            var mystacksOrdered = PlayStacks.OrderByDescending(s => s.GetHashCode());
-            var hisstacksOrdered = other.PlayStacks.OrderByDescending(s => s.GetHashCode());
 
-            return mystacksOrdered.SequenceEqual(hisstacksOrdered);
+
+            return _playStacksOrdered.SequenceEqual(other._playStacksOrdered);
             // The finish stacks are not checked, because only the cards not in stock or on the play stacks are there.
             // There is only one significant order possible, so if the cards in stock and on the play stacks are equal, so must be the finish stacks.
         }

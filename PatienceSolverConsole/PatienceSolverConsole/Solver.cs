@@ -80,11 +80,11 @@ namespace PatienceSolverConsole
 
         private void TryAddWork(SolverEntry currentEntry, PatienceField newField)
         {
-            newField = newField.DoTrivialMoves();
+            var newFieldm = newField.DoTrivialMoves();
 
-            if (_knownFields.Add(newField))
+            if (_knownFields.Add(newFieldm))
             {
-                _toTry.Push(new SolverEntry { Field = newField, Previous = currentEntry });
+                _toTry.Push(new SolverEntry { Field = newFieldm, Previous = currentEntry });
             }
         }
     }
@@ -107,5 +107,7 @@ namespace PatienceSolverConsole
                 current = current.Previous;
             }
         }
+
+        public string Move { get; set; }
     }
 }

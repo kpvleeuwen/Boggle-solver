@@ -12,8 +12,6 @@ namespace PatienceSolverConsole
     /// </summary>
     public abstract class CardStack : IEnumerable<Card>
     {
-        protected CardStack() { }
-
         public abstract Card Top { get; }
         public abstract int Count { get; }
 
@@ -83,18 +81,17 @@ namespace PatienceSolverConsole
         }
     }
 
-    public abstract class ListBasedCardStack : CardStack
+    public class Stock : CardStack
     {
-        public ListBasedCardStack(IEnumerable<Card> cards)
+        public Stock(IEnumerable<Card> cards, bool justMoveTop)
         {
-            Cards = new List<Card>(cards);
-            if (Top != null)
-                Cards[Count - 1] = Top.AsVisible();
+            JustMoveTop = justMoveTop;
+            Cards = new List<Card>(cards.Select(c => c.AsVisible()));
             _hash = DoGetHashCode();
         }
 
         protected virtual IList<Card> Cards { get; private set; }
-        public override Card Top { get { return Cards.LastOrDefault(); } }
+        public override Card Top { get { return Cards.FirstOrDefault(); } }
         public override int Count { get { return Cards.Count; } }
 
         private int _hash;
@@ -111,30 +108,6 @@ namespace PatienceSolverConsole
         public override int GetHashCode()
         {
             return _hash;
-        }
-
-        /// <summary>
-        /// Enumerates the cards of this stack from top to bottom
-        /// </summary>
-        /// <returns></returns>
-        public override IEnumerator<Card> GetEnumerator()
-        {
-            return Cards.GetEnumerator();
-        }
-
-        public override IEnumerable<Card> GetMovableCards()
-        {
-            return Cards.TakeWhile(c => c.Visible);
-        }
-    }
-
-
-    public class Stock : ListBasedCardStack
-    {
-        public Stock(IEnumerable<Card> cards, bool justMoveTop)
-            : base(cards.Select(c => c.AsVisible()))
-        {
-            JustMoveTop = justMoveTop;
         }
 
         protected override CardStack DoAccept(Card c, CardStack from)
@@ -166,7 +139,16 @@ namespace PatienceSolverConsole
                 return this;
             // Move the old top to the bottom
 
-            return new Stock(new[] { Top }.Concat(Cards.Except(new[] { Top })), JustMoveTop);
+            return new Stock(Cards.Skip(1).Concat(new[] { Top }), JustMoveTop);
+        }
+
+        /// <summary>
+        /// Enumerates the cards of this stack from top to bottom
+        /// </summary>
+        /// <returns></returns>
+        public override IEnumerator<Card> GetEnumerator()
+        {
+            return Cards.GetEnumerator();
         }
 
         /// <summary>
@@ -331,6 +313,22 @@ namespace PatienceSolverConsole
             if (Top.Visible)
                 return this;
             return new PlayStack(Parent, Top.AsVisible());
+        }
+
+        public override bool Equals(object obj)
+        {
+            var stack = obj as PlayStack;
+            if (stack == null) return false;
+            return Equals(stack);
+        }
+
+        private bool Equals(PlayStack stack)
+        {
+            if (ReferenceEquals(this, stack)) return true;
+            if (stack.Top != Top)
+                return false;
+            if (Top == null) return true;
+            return Parent.Equals(stack.Parent);
         }
 
         /// <summary>
