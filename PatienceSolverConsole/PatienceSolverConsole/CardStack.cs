@@ -268,8 +268,8 @@ namespace PatienceSolverConsole
             if (from is PlayStack)
             {
                 // all cards on top of this c are moved too
-                var playablecards = from.SkipWhile(mc => mc != c);
-                return Create(this, playablecards);
+                var playablecards = from.TakeWhile(mc => mc != c).Reverse();
+                return Create(new PlayStack(this, c), playablecards);
             }
             else
             {
@@ -300,9 +300,12 @@ namespace PatienceSolverConsole
 
         private IEnumerable<Card> GetCards()
         {
-            yield return Top;
-            foreach (var bottomcard in Parent)
-                yield return bottomcard;
+            var stack = this;
+            while (!(stack is EmptyStack))
+            {
+                yield return stack.Top;
+                stack = stack.Parent;
+            }
         }
 
         public override IEnumerator<Card> GetEnumerator()
