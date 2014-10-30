@@ -16,7 +16,7 @@ namespace PatienceSolverConsole
         static void Main(string[] args)
         {
             if (args.Contains("play"))
-                PlayGame(PatienceField.FillWithRandomCards(new Random(4)));
+                PlayGame(PatienceField.FillWithRandomCards(new Random(6)));
             else
                 SolveField(GetLastField());
         }
@@ -29,7 +29,7 @@ namespace PatienceSolverConsole
 
                 var field = PatienceField.FillWithRandomCards(new Random(currentFieldNumber));
                 field.DumpToConsole();
-                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                TimeSpan timeout = TimeSpan.FromSeconds(10);
                 var stopwatch = Stopwatch.StartNew();
                 var solution = TrySolve(field, timeout);
                 stopwatch.Stop();

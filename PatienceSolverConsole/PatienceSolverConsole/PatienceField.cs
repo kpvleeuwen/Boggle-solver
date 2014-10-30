@@ -44,8 +44,8 @@ namespace PatienceSolverConsole
         public PatienceField(Stock stock, IEnumerable<PlayStack> playStacks, IEnumerable<FinishStack> finishStacks)
         {
             Stock = stock;
-            PlayStacks = playStacks;
-            FinishStacks = finishStacks;
+            PlayStacks = playStacks.ToList();
+            FinishStacks = finishStacks.ToList();
             _hash = DoGetHashCode();
         }
 
@@ -64,7 +64,7 @@ namespace PatienceSolverConsole
             }
             for (int finishstack = 1; finishstack <= 4; finishstack++)
             {
-                var stack = new FinishStack();
+                var stack = FinishStack.Create(Enumerable.Empty<Card>());
                 finishstacks.Add(stack);
             }
             var stock = new Stock(stackless, false);
@@ -165,11 +165,23 @@ namespace PatienceSolverConsole
         {
             var newto = to.Accept(toMove, from);
             var newfrom = from.Remove(toMove);
-            return new PatienceField(
-                Replace(Stock, from, newfrom),
-                PlayStacks.Select(ps => Replace(ps, from, newfrom)).Select(ps => Replace(ps, to, newto)),
-                FinishStacks.Select(ps => Replace(ps, from, newfrom)).Select(ps => Replace(ps, to, newto))
-                );
+
+            var newstock = Replace(Stock, from, newfrom);
+
+            var newplaystacks = PlayStacks;
+            var newfinishstacks = FinishStacks;
+
+            if (from is PlayStack)
+                newplaystacks = newplaystacks.Select(ps => Replace(ps, from, newfrom));
+            else if (from is FinishStack)
+                newfinishstacks = newfinishstacks.Select(ps => Replace(ps, from, newfrom));
+
+            if (to is PlayStack)
+                newplaystacks = newplaystacks.Select(ps => Replace(ps, to, newto));
+            else if (to is FinishStack)
+                newfinishstacks = newfinishstacks.Select(ps => Replace(ps, to, newto));
+
+            return new PatienceField(newstock, newplaystacks, newfinishstacks);
         }
 
         private T Replace<T>(T instance, object tosearch, object replacement)
