@@ -15,8 +15,14 @@ namespace PatienceSolverConsole
 
         static void Main(string[] args)
         {
-            if (args.Contains("play"))
-                PlayGame(PatienceField.FillWithRandomCards(new Random(6)));
+            if (args.FirstOrDefault() == "play")
+            {
+                int field;
+                if (!int.TryParse(args.LastOrDefault(), out field))
+                    field = new Random().Next();
+                Console.WriteLine("Playing field {0}", field);
+                PlayGame(PatienceField.FillWithRandomCards(new Random(field)));
+            }
             else
                 SolveField(GetLastField());
         }
@@ -41,7 +47,10 @@ namespace PatienceSolverConsole
                 {
                     Console.WriteLine("Solution found for field {0} in {1} seconds :)({2} steps) ",
                         currentFieldNumber, stopwatch.Elapsed.TotalSeconds, solution.GetSequence().Count());
-                    File.AppendAllText(solvableFieldsFile, String.Format("{0}\r\n", currentFieldNumber));
+                    File.AppendAllText(solvableFieldsFile, String.Format("{0};{1};{2}\r\n",
+                        currentFieldNumber,
+                        stopwatch.Elapsed.TotalMilliseconds,
+                        String.Join(",", solution.WinningMoves().ToArray())));
                 }
             }
         }

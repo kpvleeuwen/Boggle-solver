@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="Card.cs" />
     <Compile Include="CardStack.cs" />
+    <Compile Include="Move.cs" />
     <Compile Include="PatienceField.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

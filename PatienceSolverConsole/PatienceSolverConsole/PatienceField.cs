@@ -121,6 +121,7 @@ namespace PatienceSolverConsole
         /// <returns></returns>
         public override bool Equals(object obj)
         {
+            if (ReferenceEquals(this, obj)) return true;
             var other = obj as PatienceField;
             if (other == null) return false;
             if (other.GetHashCode() != this.GetHashCode())
