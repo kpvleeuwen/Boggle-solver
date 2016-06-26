@@ -82,7 +82,11 @@ namespace BoggleSolverConsole
                 FindWords(chars, newVisited, nextstep, path, x + 1, y).Concat(
                 FindWords(chars, newVisited, nextstep, path, x, y + 1)).Concat(
                 FindWords(chars, newVisited, nextstep, path, x - 1, y)).Concat(
-                FindWords(chars, newVisited, nextstep, path, x, y - 1)))
+                FindWords(chars, newVisited, nextstep, path, x, y - 1)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x + 1, y + 1)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x - 1, y - 1)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x - 1, y + 1)).Concat(
+                FindWords(chars, newVisited, nextstep, path, x + 1, y - 1)))
                 yield return word;
             path.Pop();
         }
